@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "RoBrowser - Server finder for Roblox",
+  "short_name": "RoBrowser",
+  "version": "1.0.0",
+  "description": "Find the best, empty, or full Roblox servers instantly. Features real-time ping, player counts, and smart sorting.",
+  "icons": {
+    "16": "assets/icons/icon16.png",
+    "32": "assets/icons/icon32.png",
+    "48": "assets/icons/icon48.png",
+    "128": "assets/icons/icon128.png"
+  },
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://www.roblox.com/*",
+    "https://games.roblox.com/*",
+    "https://thumbnails.roblox.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://www.roblox.com/games/*"],
+      "js": ["src/content/content.js"],
+      "css": ["src/content/styles.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": {
+    "service_worker": "src/background/service-worker.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "RoBrowser",
+    "default_icon": {
+      "16": "assets/icons/icon16.png",
+      "32": "assets/icons/icon32.png",
+      "48": "assets/icons/icon48.png"
+    }
+  }
+}
