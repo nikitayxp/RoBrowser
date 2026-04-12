@@ -1,8 +1,8 @@
-# ServerBrowser for Roblox
+# RoBrowser -- Server Finder for Roblox
 
-<img src="assets/icons/logoServerBrowser.png" alt="ServerBrowser Banner" width="100%" />
+<img src="assets/icons/logoServerBrowser.png" alt="RoBrowser Banner" width="100%" />
 
-ServerBrowser is a lightweight Chrome extension (Manifest V3) that replaces the native Roblox server list with a faster, data-transparent alternative. It is built to help you find the right server without relying on guesswork.
+RoBrowser is a lightweight Chrome extension (Manifest V3) that replaces the native Roblox server list with a faster, data-transparent alternative. It is built to help you find the right server without relying on guesswork.
 
 ---
 
@@ -30,7 +30,7 @@ Because of how the Roblox API caches data:
 1. A server showing "30ms" might experience a lag spike right after you join.
 2. Player thumbnails are a great secondary indicator. A stable server usually has a diverse set of avatars, whereas a newly spun-up or struggling server might show mostly default models.
 
-ServerBrowser prioritizes data honesty. The extension doesn't use heuristics or fake formulas to guess your ping; it strictly displays the raw data the Roblox API provides.
+RoBrowser prioritizes data honesty. The extension doesn't use heuristics or fake formulas to guess your ping; it strictly displays the raw data the Roblox API provides.
 
 ---
 

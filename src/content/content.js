@@ -3,7 +3,7 @@ const RRS_MODAL_ID = "rrs-modal-root";
 const RRS_PAGE_BRIDGE_ID = "rrs-page-bridge";
 const RRS_JOIN_REQUEST_EVENT = "RRS_JOIN_REQUEST";
 const RRS_JOIN_RESPONSE_EVENT = "RRS_JOIN_RESPONSE";
-const LOG_PREFIX = "[ServerBrowser]";
+const LOG_PREFIX = "[RoBrowser]";
 const THUMBNAIL_BATCH_SIZE = 12;
 const COPY_FEEDBACK_DURATION_MS = 1700;
 const BACKGROUND_MESSAGE_TIMEOUT_MS = 12000;
@@ -48,6 +48,7 @@ const state = {
   modalNodes: null,
   thumbnailQueue: [],
   thumbnailQueueTimer: null,
+  previousFocus: null,
   handlers: {
     onJoinResponse: null,
     onPartialUpdate: null
@@ -68,14 +69,14 @@ function bootstrap() {
   window.addEventListener("popstate", onRouteMaybeChanged, true);
 
   const observer = new MutationObserver(() => {
-    scheduleMount();
+    if (!document.getElementById(RRS_ENTRY_ID) || !document.getElementById(RRS_ENTRY_ID).isConnected) {
+      scheduleMount();
+    }
   });
 
-  observer.observe(document.documentElement, {
+  observer.observe(document.body, {
     childList: true,
-    subtree: true,
-    attributes: true,
-    attributeFilter: ["class", "aria-selected"]
+    subtree: true
   });
 
   ensureModalRoot();
@@ -165,20 +166,43 @@ function attemptMountAbovePlayButton() {
   const entryContainer = document.createElement("div");
   entryContainer.id = RRS_ENTRY_ID;
   entryContainer.className = "rrs-entry-container";
-  entryContainer.style.width = "100%";
-  entryContainer.style.marginBottom = "10px";
+
+  const glow = document.createElement("div");
+  glow.className = "rrs-entry-glow";
 
   const button = document.createElement("button");
   button.type = "button";
   button.className = "rrs-entry-button";
-  button.classList.add("btn-secondary-md", "btn-control-md");
-  button.textContent = "Open Connection Quality";
-  button.style.width = "100%";
+
+  const label = document.createTextNode("Open Connection Quality");
+
+  const arrow = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  arrow.setAttribute("viewBox", "0 0 10 10");
+  arrow.setAttribute("width", "10");
+  arrow.setAttribute("height", "10");
+  arrow.setAttribute("fill", "none");
+  arrow.classList.add("rrs-entry-arrow");
+
+  const line = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  line.setAttribute("d", "M0 5h7");
+  line.setAttribute("stroke", "white");
+  line.setAttribute("stroke-width", "2");
+
+  const chevron = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  chevron.setAttribute("d", "M1 1l4 4-4 4");
+  chevron.setAttribute("stroke", "white");
+  chevron.setAttribute("stroke-width", "2");
+
+  arrow.appendChild(line);
+  arrow.appendChild(chevron);
+  button.appendChild(label);
+  button.appendChild(arrow);
 
   button.addEventListener("click", async () => {
     await openModalAndLoad();
   });
 
+  entryContainer.appendChild(glow);
   entryContainer.appendChild(button);
 
   const insertionAnchor = resolveInjectionAnchor(container, playButton);
@@ -297,6 +321,9 @@ function ensureModalRoot() {
 
   const dialog = document.createElement("section");
   dialog.className = "rrs-modal-dialog";
+  dialog.setAttribute("role", "dialog");
+  dialog.setAttribute("aria-modal", "true");
+  dialog.setAttribute("aria-label", MODAL_TITLE_BASE);
 
   const header = document.createElement("header");
   header.className = "rrs-modal-header";
@@ -356,7 +383,54 @@ function ensureModalRoot() {
     await refreshModalData(refreshButton);
   });
 
+  root.addEventListener("keydown", handleModalKeydown);
+
   state.modalNodes = collectModalNodes(root);
+}
+
+function handleModalKeydown(event) {
+  if (!state.modalOpen || !state.modalNodes) {
+    return;
+  }
+
+  if (event.key === "Escape") {
+    event.preventDefault();
+    event.stopPropagation();
+    closeModal();
+    return;
+  }
+
+  if (event.key !== "Tab") {
+    return;
+  }
+
+  const dialog = state.modalNodes.root.querySelector(".rrs-modal-dialog");
+  if (!dialog) {
+    return;
+  }
+
+  const focusable = dialog.querySelectorAll(
+    'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+  );
+
+  if (focusable.length === 0) {
+    event.preventDefault();
+    return;
+  }
+
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+    return;
+  }
+
+  if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
 }
 
 function collectModalNodes(root) {
@@ -377,6 +451,7 @@ async function openModalAndLoad() {
     return;
   }
 
+  state.previousFocus = document.activeElement;
   modal.root.classList.remove("rrs-hidden");
   state.modalOpen = true;
   state.selectedCategoryKey = null;
@@ -392,6 +467,10 @@ async function openModalAndLoad() {
   const emptyDataset = createEmptyDataset(state.placeId);
   renderCategories(emptyDataset);
   setModalFetchingIndicator(true);
+
+  if (modal.refreshButton) {
+    modal.refreshButton.focus();
+  }
 
   try {
     await loadDatasetAndRender({ forceRefresh: false, keepSelection: false });
@@ -442,6 +521,11 @@ function closeModal() {
   state.modalOpen = false;
   state.selectedCategoryKey = null;
   setModalFetchingIndicator(false);
+
+  if (state.previousFocus && typeof state.previousFocus.focus === "function") {
+    state.previousFocus.focus();
+    state.previousFocus = null;
+  }
 }
 
 async function getDatasetForCurrentPlace(forceRefresh = false) {
@@ -461,7 +545,7 @@ async function getDatasetForCurrentPlace(forceRefresh = false) {
     requestId
   });
 
-  console.log("[ServerBrowser] Received dataset:", response);
+  console.log("[RoBrowser] Received dataset:", response);
 
   if (response && response.ok === true && response.status === "fetching_started") {
     state.activeRequestId = normalizeText(response.requestId, requestId);
@@ -1292,7 +1376,7 @@ async function attemptJoinByJobId(jobId) {
 
     const fallbackUrl = `roblox://placeId=${state.placeId}&gameInstanceId=${jobId}`;
     window.location.href = fallbackUrl;
-    console.info("[ServerBrowser] Used roblox:// fallback");
+    console.info("[RoBrowser] Used roblox:// fallback");
   } catch (error) {
     console.error(`${LOG_PREFIX} Join action failed:`, error);
     modal.status.textContent = "Failed to start server join.";
@@ -1581,8 +1665,8 @@ function normalizeDisplayInt(value) {
 }
 
 function normalizeText(value, fallback) {
-  if (typeof value === "string" && value.length > 0) {
-    return value;
+  if (typeof value === "string" && value.trim().length > 0) {
+    return value.trim();
   }
 
   return fallback;

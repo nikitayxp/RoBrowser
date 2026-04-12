@@ -1,6 +1,6 @@
 const ROBLOX_SERVERS_API_BASE_URL = "https://games.roblox.com/v1/games";
 const ROBLOX_THUMBNAILS_BATCH_URL = "https://thumbnails.roblox.com/v1/batch";
-const LOG_PREFIX = "[ServerBrowser]";
+const LOG_PREFIX = "[RoBrowser]";
 const DEFAULT_LIMIT = 100;
 const DEFAULT_MAX_PAGES = 5;
 const MAX_RETRIES = 3;
@@ -11,6 +11,8 @@ const THUMBNAIL_CACHE_TTL_MS = 30 * 60 * 1000;
 const THUMBNAIL_BATCH_LIMIT = 100;
 const THUMBNAIL_PENDING_RETRY_DELAY_MS = 180;
 const DEFAULT_API_SORT_ORDER = "Desc";
+const RESPONSE_CACHE_MAX_SIZE = 50;
+const THUMBNAIL_CACHE_MAX_SIZE = 2000;
 
 const CONNECTION_CATEGORIES = [
   { key: "excellent", label: "Excellent (< 60ms)" },
@@ -33,6 +35,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return false;
   }
 
+  // GET_PUBLIC_SERVERS: single-page fetch without quality grouping. Reserved for future use.
   if (message.type === "GET_PUBLIC_SERVERS") {
     (async () => {
       try {
@@ -56,6 +59,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  // GET_LOW_PING_SERVERS is a legacy alias kept for backward compatibility.
   if (message.type === "GET_REGION_SERVERS" || message.type === "GET_LOW_PING_SERVERS") {
     const apiSortOrder = normalizeApiSortOrder(message.apiSortOrder);
     const senderTabId = sender && sender.tab && Number.isInteger(sender.tab.id)
@@ -153,6 +157,7 @@ async function getPublicServers({ placeId, cursor = null, limit = DEFAULT_LIMIT,
     payload,
     expiresAt: Date.now() + CACHE_TTL_MS
   });
+  enforceCacheLimit(responseCache, RESPONSE_CACHE_MAX_SIZE);
 
   return payload;
 }
@@ -195,6 +200,7 @@ async function getConnectionQualityServers({
     payload,
     expiresAt: Date.now() + CACHE_TTL_MS
   });
+  enforceCacheLimit(responseCache, RESPONSE_CACHE_MAX_SIZE);
 
   return payload;
 }
@@ -286,15 +292,11 @@ async function streamConnectionQualityServers({
     });
   }
 
-  const highestPlayerCount = servers.length > 0
-    ? Math.max(...servers.map((server) => normalizeInt(server && server.playing, 0)))
-    : 0;
-  console.log("[ServerBrowser] Highest player count in raw batch:", highestPlayerCount);
-
   responseCache.set(cacheKey, {
     payload: finalPayload,
     expiresAt: Date.now() + CACHE_TTL_MS
   });
+  enforceCacheLimit(responseCache, RESPONSE_CACHE_MAX_SIZE);
 
   return finalPayload;
 }
@@ -370,11 +372,6 @@ async function fetchPublicServerPages({ placeId, limit, maxPages, sortOrder = DE
     }
   }
 
-  const highestPlayerCount = servers.length > 0
-    ? Math.max(...servers.map((server) => normalizeInt(server && server.playing, 0)))
-    : 0;
-  console.log("[ServerBrowser] Highest player count in raw batch:", highestPlayerCount);
-
   return {
     servers,
     pageCount,
@@ -449,6 +446,7 @@ async function fetchAvatarHeadshotsForServers(servers) {
     }
   }
 
+  enforceCacheLimit(thumbnailCache, THUMBNAIL_CACHE_MAX_SIZE);
   return thumbnailMap;
 }
 
@@ -1028,4 +1026,32 @@ function chunkArray(values, chunkSize) {
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function enforceCacheLimit(cache, maxSize) {
+  if (cache.size <= maxSize) {
+    return;
+  }
+
+  const now = Date.now();
+  for (const [key, entry] of cache) {
+    if (entry.expiresAt <= now) {
+      cache.delete(key);
+    }
+  }
+
+  if (cache.size <= maxSize) {
+    return;
+  }
+
+  const overflow = cache.size - maxSize;
+  let deleted = 0;
+  for (const key of cache.keys()) {
+    if (deleted >= overflow) {
+      break;
+    }
+
+    cache.delete(key);
+    deleted += 1;
+  }
 }

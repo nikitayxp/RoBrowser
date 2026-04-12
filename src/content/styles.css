@@ -13,27 +13,79 @@
   --rrs-bad: #ef4444;
   --rrs-unknown: #94a3b8;
   --rrs-card-shadow: 0 14px 30px rgba(0, 0, 0, 0.32);
+  --rrs-bg-hover: #353a40;
+  --rrs-text-hint: #9db0bd;
+  --rrs-toggle-knob: #d2dae2;
+  --rrs-copy-success-text: #c9f9d6;
+  --rrs-copy-error-text: #ffd4d4;
+  --rrs-refresh-text: #d6efff;
+  --rrs-sort-asc-text: #d7fee3;
 }
 
 .rrs-entry-container {
   width: 100%;
   margin: 0 0 10px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rrs-entry-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #6366f1, #ec4899, #facc15);
+  opacity: 0.55;
+  filter: blur(10px);
+  transition: opacity 0.8s ease, filter 0.8s ease;
+  pointer-events: none;
+}
+
+.rrs-entry-container:hover .rrs-entry-glow {
+  opacity: 1;
+  filter: blur(14px);
+  transition-duration: 0.2s;
 }
 
 .rrs-entry-button {
+  position: relative;
   width: 100%;
-  border: 1px solid rgba(0, 162, 255, 0.6);
+  border: none;
   border-radius: 8px;
-  background: linear-gradient(180deg, #00a2ff 0%, #008fe2 100%);
+  background: #111827;
   color: #ffffff;
   font-size: 13px;
   font-weight: 700;
-  padding: 9px 12px;
+  padding: 10px 16px;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .rrs-entry-button:hover {
-  background: linear-gradient(180deg, #19adff 0%, #0097ef 100%);
+  background: #1f2937;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+}
+
+.rrs-entry-button:active {
+  transform: translateY(0);
+}
+
+.rrs-entry-arrow {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-left: 2px;
+  transition: transform 0.2s ease;
+}
+
+.rrs-entry-button:hover .rrs-entry-arrow {
+  transform: translateX(3px);
 }
 
 .rrs-modal-root {
@@ -126,7 +178,7 @@
   border: 1px solid rgba(0, 162, 255, 0.4);
   border-radius: 8px;
   background: rgba(0, 162, 255, 0.16);
-  color: #d6efff;
+  color: var(--rrs-refresh-text);
   font-size: 12px;
   font-weight: 700;
   padding: 7px 10px;
@@ -154,7 +206,7 @@
 }
 
 .rrs-close-button:hover {
-  background: #353a40;
+  background: var(--rrs-bg-hover);
 }
 
 .rrs-status {
@@ -240,7 +292,7 @@
 .rrs-disclaimer {
   margin: 0;
   margin-bottom: 10px;
-  color: #9db0bd;
+  color: var(--rrs-text-hint);
   font-size: 12px;
   line-height: 1.35;
 }
@@ -353,7 +405,7 @@
 .rrs-sort-toggle[data-sort-order="asc"] {
   border-color: rgba(34, 197, 94, 0.55);
   background: rgba(34, 197, 94, 0.12);
-  color: #d7fee3;
+  color: var(--rrs-sort-asc-text);
 }
 
 .rrs-hide-full-toggle {
@@ -386,7 +438,7 @@
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: #d2dae2;
+  background: var(--rrs-toggle-knob);
   transition: transform 0.18s ease, background 0.18s ease;
 }
 
@@ -431,7 +483,7 @@
 }
 
 .rrs-search-input::placeholder {
-  color: #9db0bd;
+  color: var(--rrs-text-hint);
 }
 
 .rrs-search-clear {
@@ -484,13 +536,13 @@
 .rrs-copy-id-button.rrs-copy-id-success {
   border-color: rgba(34, 197, 94, 0.55);
   background: rgba(34, 197, 94, 0.12);
-  color: #c9f9d6;
+  color: var(--rrs-copy-success-text);
 }
 
 .rrs-copy-id-button.rrs-copy-id-error {
   border-color: rgba(239, 68, 68, 0.6);
   background: rgba(239, 68, 68, 0.1);
-  color: #ffd4d4;
+  color: var(--rrs-copy-error-text);
 }
 
 .rrs-server-card-ghost {
@@ -507,7 +559,7 @@
 .rrs-server-ghost-id {
   font-family: Consolas, "Courier New", monospace;
   font-size: 11px;
-  color: #9db0bd;
+  color: var(--rrs-text-hint);
   word-break: break-all;
 }
 
@@ -580,7 +632,7 @@
 
 @media (max-width: 760px) {
   .rrs-modal-dialog {
-    width: min(96vw, 96vw);
+    width: 96vw;
     max-height: 92vh;
   }
 
