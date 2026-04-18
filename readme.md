@@ -46,6 +46,22 @@ Until the extension is published on the Chrome Web Store, you can run it locally
 
 ---
 
+## Support
+
+If you need help or want to report a bug:
+
+[GitHub Issues](https://github.com/nikitayxp/RoBrowser/issues)
+
+---
+
+## Privacy
+
+Privacy policy:
+
+[PRIVACY.md](PRIVACY.md)
+
+---
+
 ## License
 
 This project is licensed under the MIT License.

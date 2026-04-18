@@ -22,6 +22,20 @@ node_modules/
 dist/
 build/
 *.zip
+*.crx
+*.pem
+
+# Local store/marketing drafts
+store/
+screenshots/
+marketing/
+
+# Temp/cache
+tmp/
+temp/
+.cache/
+*.tmp
+*.bak
 
 # Environment / secrets
 .env
